@@ -34,7 +34,7 @@ class DataPreparer():
             sinhala_text = f.readlines()
             sinhala_text = [text.strip("\n") for text in sinhala_text]
         english_train_filename = os.path.join(data_path, "train.src")
-        with open(english_train_filename, "r") as f:
+        with open(english_train_filename, "r", encoding="utf-8") as f:
             english_text = f.readlines()
             english_text = [text.strip("\n") for text in english_text]
 
