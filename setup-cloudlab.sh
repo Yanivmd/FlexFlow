@@ -2,8 +2,8 @@
 
 set -x
 
-if [ $# -lt 2 ]; then
-    echo "Usage: bash setup-cloudlab.sh username IP"
+if [ $# -lt 3 ]; then
+    echo "Usage: bash setup-cloudlab.sh username IP data_partition"
     exit
 fi
 
@@ -16,6 +16,7 @@ ssh_up=0
 
 username=$1
 ip=$2
+data=$3
 
 check_connectivity() {
     local status=$1
@@ -43,8 +44,8 @@ check_connectivity $ssh_down $ip
 check_connectivity $ssh_up   $ip
 
 # Step 1.2: Increase the disk capacity
-ssh $ssh_arg $username@$ip "yes | sudo mkfs.ext4 /dev/sdb"
-ssh $ssh_arg $username@$ip "sudo mount /dev/sdb $work_dir"
+ssh $ssh_arg $username@$ip "yes | sudo mkfs.ext4 $data"
+ssh $ssh_arg $username@$ip "sudo mount $data $work_dir"
 ssh $ssh_arg $username@$ip "sudo chown -R $username $work_dir"
 
 # Step 1.3: Run CUDA runfile
