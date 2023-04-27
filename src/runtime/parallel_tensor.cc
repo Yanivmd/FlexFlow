@@ -14,6 +14,7 @@
 #include "flexflow/ops/noop.h"
 #include "flexflow/ops/concat.h"
 #include "flexflow/utils/hash_utils.h"
+#include <iomanip>
 
 namespace FlexFlow {
 
@@ -542,6 +543,25 @@ ParallelTensorShape ParallelTensorBase::get_shape() const {
   }
 
   return shape;
+}
+
+std::ostream& operator<<(std::ostream& os, const ParallelTensorBase& t) {
+  int w = 25;
+  os << std::setw(w) << " " << "parallel_tensor_guid: " << t.parallel_tensor_guid << std::endl
+     << std::setw(w) << " " << "dims: ";
+
+  for (int i = 0; i < t.num_dims; i++) {
+    os << t.dims[i];
+    if (i != t.num_dims - 1) {
+      os << ",";
+    } else {
+      os << std::endl;
+    }
+  }
+
+  os << std::setw(w) << " " << "machine_view: " << t.machine_view;
+
+  return os;
 }
 
 int ParallelTensorShape::get_num_replica_dims() const {

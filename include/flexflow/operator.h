@@ -108,6 +108,8 @@ protected:
   bool check_output_input_weight_parallel_dims(bool allocate_weights = true) const;
   bool check_output_input_weight_same_parallel_is() const;
   bool check_output_input_weight_same_machine_view() const;
+  friend std::ostream& operator<<(std::ostream& os, const Op& op);
+
 public:
   Op(FFModel& model,
      OperatorType type,

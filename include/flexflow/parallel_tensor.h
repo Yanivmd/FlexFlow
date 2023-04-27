@@ -52,6 +52,11 @@ struct ParallelDim {
   int degree = UNKNOWN_DEGREE;
   int parallel_idx = UNKNOWN_INDEX;
   bool is_replica_dim = false;
+
+  friend std::ostream& operator<<(std::ostream& os, const ParallelDim& d) {
+    os << d.size << "/" << d.degree << "/" << d.parallel_idx << "/" << d.is_replica_dim;
+    return os;
+  }
 };
 
 struct ParallelTensorShape {
@@ -136,6 +141,7 @@ struct ParallelTensorBase {
 		  bool get_parameters);
   ParallelTensorShape get_shape() const;
 
+  friend std::ostream& operator<<(std::ostream& os, const ParallelTensorBase& t);
 private:
   template <typename T>
   bool get_input_sub_tensor_via_mappings(const ParallelConfig& pc, ParallelTensorBase& tensor) const;

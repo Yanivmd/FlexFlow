@@ -1599,10 +1599,22 @@ void GraphSearchHelper::graph_optimize(size_t budget,
     graph->export_strategy_computation_graph(empty_strategy, this->config.export_strategy_computation_graph_file);
   }
   
+  std::cout << "initial graph\n";
+  graph->hash(true);
   Node sink_node = graph->find_sink_node();
   GraphOptimizeResult optimal = this->generic_sequence_optimize<GraphOptimizeResult>(graph, sink_node, tl::nullopt/*output_shape*/, tl::nullopt/*input_shape*/);
   this->logger->debug() << "Total cache size: " << this->cached_optimized_graphs.size();
   std::cout << "Optimal cost: " << optimal.cost << std::endl;
+  std::cout << "Max budget: " << this->model->config.max_budget << std::endl;
+  exit(0);
+  for (size_t b = 0; b < this->model->config.max_budget; b++) {
+    this->model->config.search_budget = b;
+    float current = this->generic_sequence_optimize<float>(graph, sink_node, tl::nullopt/*output_shape*/, tl::nullopt/*input_shape*/, b);
+    std::cout << "Cost with budget " << b << " is " << current << std::endl;
+    if (current == optimal.cost) {
+      break;
+    }
+  }
   SimplificationSettings settings;
   settings.fuse_parallel_ops = true;
   settings.remove_noops = true;
