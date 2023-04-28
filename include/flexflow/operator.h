@@ -74,6 +74,8 @@ public:
       tl::optional<MappingOperation> operation = tl::nullopt);
 
   ParallelConfig view_to_pc(MachineView const &view) const;
+  
+  size_t hash() const;
 protected:
   void register_weight_parallel_dims(
       std::vector<std::pair<int, int>> mappings, int input_idx = 0, int weight_idx = 0);

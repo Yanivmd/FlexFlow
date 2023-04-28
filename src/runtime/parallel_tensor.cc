@@ -20,6 +20,15 @@ namespace FlexFlow {
 
 using namespace Legion;
 
+size_t ParallelDim::hash() const {
+  size_t total_hash = 0;
+  hash_combine(total_hash, size);
+  hash_combine(total_hash, degree);
+  hash_combine(total_hash, parallel_idx);
+  hash_combine(total_hash, is_replica_dim);
+  return total_hash;
+}
+
 TensorBase::TensorBase(const TensorBase& rhs)
 {
   tensor_guid = rhs.tensor_guid;
@@ -147,6 +156,7 @@ void ParallelTensorShape::print() const {
   for (int i = 0; i < this->num_dims; i++) {
     std::cout << this->dims[i].size << "/" << this->dims[i].degree << ",";
   }
+  std::cout << "data_type " << this->data_type << " " << static_cast<int>(this->data_type) << std::endl;
   std::cout << std::endl;
 }
 
@@ -543,6 +553,29 @@ ParallelTensorShape ParallelTensorBase::get_shape() const {
   }
 
   return shape;
+}
+
+size_t ParallelTensorShape::hash() const {
+  size_t total_hash = 0;
+  hash_combine(total_hash, num_dims);
+  for (int i = 0; i < num_dims; i++) {
+    hash_combine(total_hash, dims[i].hash());
+    // std::cout << "[ParallelTensorShape::hash] dim " << total_hash << std::endl;
+  }
+  // TODO: there seems a bug of unintialized data type in FlexFlow
+  // hash_combine(total_hash, static_cast<int>(data_type));
+  return total_hash;
+}
+
+size_t ParallelTensorBase::hash() const {
+  size_t total_hash = 0;
+  hash_combine(total_hash, num_dims);
+  for (int i = 0; i < num_dims; i++) {
+    hash_combine(total_hash, dims[i].hash());
+  }
+  // hash_combine(total_hash, static_cast<int>(data_type));
+  // hash_combine(total_hash, static_cast<int>(sync_type));
+  return total_hash;
 }
 
 std::ostream& operator<<(std::ostream& os, const ParallelTensorBase& t) {

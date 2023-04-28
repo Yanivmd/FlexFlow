@@ -57,6 +57,8 @@ struct ParallelDim {
     os << d.size << "/" << d.degree << "/" << d.parallel_idx << "/" << d.is_replica_dim;
     return os;
   }
+
+  size_t hash() const;
 };
 
 struct ParallelTensorShape {
@@ -82,6 +84,8 @@ struct ParallelTensorShape {
   std::unordered_map<int, int> get_tensor_dim_to_mv_dim_mapping() const;
 
   void print() const;
+
+  size_t hash() const;
 };
 
 
@@ -142,6 +146,7 @@ struct ParallelTensorBase {
   ParallelTensorShape get_shape() const;
 
   friend std::ostream& operator<<(std::ostream& os, const ParallelTensorBase& t);
+  size_t hash() const;
 private:
   template <typename T>
   bool get_input_sub_tensor_via_mappings(const ParallelConfig& pc, ParallelTensorBase& tensor) const;

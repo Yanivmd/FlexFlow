@@ -52,6 +52,14 @@ struct Node {
   const Op* ptr;
 
   tl::optional<size_t> original_guid = tl::nullopt;
+
+  size_t hash() const {
+    if (*this != INVALID_NODE) {
+      return ptr->hash();
+    } else {
+      return 0;
+    }
+  }
 };
 
 }; // namespace PCG
