@@ -9,13 +9,13 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader, Dataset
+from pathlib import Path
+from torch.utils.data import DataLoader, Dataset, RandomSampler
 from transformers import MT5ForConditionalGeneration, T5Tokenizer
 
-BASE_DIR = "examples/python/pytorch/mt5"
-DATA_DIR = os.path.join(BASE_DIR, "data")
-OUTPUT_DIR = os.path.join(BASE_DIR, "output")
-
+BASE_DIR = Path("examples/python/pytorch/mt5")
+DATA_DIR = BASE_DIR.joinpath("data")
+OUTPUT_DIR = BASE_DIR.joinpath("output")
 
 class DataPreparer():
     """
@@ -252,10 +252,14 @@ def get_dataloaders(tokenizer, model_params):
     eval_batch_size = model_params["EVAL_BATCH_SIZE"]
     if eval_batch_size is None:
         eval_batch_size = len(eval_set)
+
+    rs = RandomSampler(train_set,num_samples=1000,replacement=True)
+
     train_params = {
         "batch_size": train_batch_size,
-        "shuffle": True,
         "num_workers": 0,
+        # "shuffle": True,
+        "sampler": rs,
     }
     eval_params = {
         "batch_size": eval_batch_size,

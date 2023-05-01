@@ -392,6 +392,10 @@ BasicGraph<typename Structure::vertex_type> transitive_reduction(G const &g) {
 
   std::unordered_set<std::pair<N, N>> to_delete;
 
+  /* This accepts three nodes - src, dfs_src and nn. 
+     dfs_src is the child of src (direct succ) and nn is in the dfs_frontier of dfs_src
+     This lambda will add edges to to_delete if there is an edge src->nn 
+     probably as nn is reachable in other ways.*/ 
   auto dfs_visitor = [&](N const &src,
                          G const &gg,
                          Structure const &ss,

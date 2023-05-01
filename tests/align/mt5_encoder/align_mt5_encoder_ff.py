@@ -4,6 +4,7 @@ import sys
 from flexflow.core import *
 
 sys.path.append("./align/")
+print(sys.path)
 from align_ff_utils import run_fwd_bwd
 from mt5_ff_utils import init_ff_mt5_encoder
 

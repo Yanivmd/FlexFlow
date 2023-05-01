@@ -20,6 +20,7 @@ import copy
 
 import numpy as np
 from flexflow.core.flexflow_cffi import Tensor, NormInitializer
+from flexflow.torch.nn.customed_tracer import CustomedTracer
 from flexflow.type import (ActiMode, AggrMode, DataType, OpType,
                            ParameterSyncType, PoolType, enum_to_int,
                            enum_to_str, int_to_enum, str_to_enum)
@@ -1424,7 +1425,7 @@ class GetItemNode(FunctionNode):
             stop = old_size if slice_elem.stop == None else slice_elem.stop
             new_size = stop - start
             return new_size < old_size
-        
+
         def is_single_element(slice_elem):
             return isinstance(slice_elem, int)
 
@@ -1482,7 +1483,7 @@ class GetItemNode(FunctionNode):
 
         new_shape.reverse()
         return ffmodel.reshape(input=curr_tensor, shape=new_shape, name=name,)
-            
+
     @staticmethod
     def strings_to_slices(strings: List[str]):
         # Extract slice elements
@@ -2413,6 +2414,7 @@ class PyTorchModel():
         input_names=None,
         batch_size=1,
         seq_length=None,
+        use_customed_tracer=False
     ):
         assert isinstance(model, torch.nn.Module)
         self.model = model
@@ -2420,6 +2422,7 @@ class PyTorchModel():
         self.input_names = input_names
         self.batch_size = batch_size
         self.seq_length = seq_length
+        self.use_customed_tracer = use_customed_tracer
         # NOTE: We default `seq_length` to `None` instead of matching
         # the HuggingFace `symbolic_trace()`'s default of `(128, 128)` to
         # decouple the two implementations
@@ -2441,7 +2444,14 @@ class PyTorchModel():
                     sequence_length=self.seq_length,
                 )
         else:
-            traced = torch.fx.symbolic_trace(self.model)
+            if self.use_customed_tracer:
+                tracer = CustomedTracer()
+                graph = tracer.trace(self.model)
+                from torch.fx.graph_module import GraphModule
+                name = self.model.__class__.__name__ if isinstance(self.model, torch.nn.Module) else self.model.__name__
+                traced = GraphModule(tracer.root, graph, name)
+            else:
+                traced = torch.fx.symbolic_trace(self.model)
 
         # Convert the fx graph to an internal graph representation
         name_to_module = {}

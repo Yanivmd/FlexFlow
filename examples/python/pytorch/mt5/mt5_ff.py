@@ -41,13 +41,16 @@ def data_to_numpy() -> None:
     train_loader, eval_loader = get_dataloaders(tokenizer, model_params)
     assert len(train_loader) == 1
     assert len(eval_loader) == 1
-    print("Saving to numpy...")
+    print("Saving to numpy...(train)")
     train_set_dict = next(iter(train_loader))
-    eval_set_dict = next(iter(eval_loader))
     for k, v in train_set_dict.items():
         np.save(os.path.join(NUMPY_DIR, f"train_{k}.npy"), v.numpy())
+        print(".", end="")
+    eval_set_dict = next(iter(eval_loader))
+    print("Saving to numpy...(eval)")
     for k, v in eval_set_dict.items():
         np.save(os.path.join(NUMPY_DIR, f"eval_{k}.npy"), v.numpy())
+        print(".", end="")
 
 
 def preprocess_train() -> None:
