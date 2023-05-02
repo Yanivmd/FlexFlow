@@ -20,7 +20,7 @@ import copy
 
 import numpy as np
 from flexflow.core.flexflow_cffi import Tensor, NormInitializer
-from flexflow.torch.nn.customed_tracer import CustomedTracer
+from flexflow.torch.customed_tracer import CustomedTracer
 from flexflow.type import (ActiMode, AggrMode, DataType, OpType,
                            ParameterSyncType, PoolType, enum_to_int,
                            enum_to_str, int_to_enum, str_to_enum)
@@ -58,7 +58,8 @@ class Node():
         if nodes is None:
             return ""
         assert type(nodes) is list or type(nodes) is tuple or \
-            type(nodes) is dict
+            type(nodes) is dict or type(nodes) is torch.fx.immutable_collections.immutable_list
+
         return INOUT_NODE_DELIMITER.join([node.name for node in nodes]) + \
             INOUT_NODE_DELIMITER
 
@@ -215,7 +216,7 @@ class ModuleNode(Node):
         elif type(module) is torch.nn.modules.pooling.AvgPool2d:
             return Pool2dNode(node, module, PoolType.POOL_AVG)
         elif type(module) is torch.nn.modules.pooling.AdaptiveAvgPool2d:
-            return AdaptivePool2dNode(node, module, PoolType.POOL_AVG)
+            return AdaptivePool2dMN(node, module, PoolType.POOL_AVG)
         elif type(module) is torch.nn.modules.batchnorm.BatchNorm2d:
             return BatchNorm2dNode(node, module)
         elif type(module) is torch.nn.modules.dropout.Dropout:
@@ -419,7 +420,7 @@ class Pool2dNode(ModuleNode):
         )
 
 
-class AdaptivePool2dNode(ModuleNode):
+class AdaptivePool2dMN(ModuleNode):
     def __init__(self, node, module, pool_type):
         super().__init__(node, module)
         self.op_type = OpType.POOL2D
@@ -868,7 +869,7 @@ class FunctionNode(Node):
         RIGHT = 1
 
     @staticmethod
-    def construct_node(node):
+    def construct_node(node, module=None):
         """
         Args:
             node (torch.fx.node.Node): ``torch.fx`` node from which to
@@ -932,6 +933,9 @@ class FunctionNode(Node):
         elif name.find("contiguous") >= 0: return ContiguousNode(node)
         elif name.find("tanh") >= 0: return TanhFNode(node)
         elif name.find("gelu") >= 0: return GeluFNode(node)
+        elif name.find("adaptive_avg_pool2d") >= 0: return AdaptivePool2dFN(node, PoolType.POOL_AVG)
+        import pdb
+        pdb.set_trace()
         assert 0, f"Unknown function or method: {name}"
 
     @staticmethod
@@ -1088,6 +1092,35 @@ class FunctionNode(Node):
             y = ffmodel.create_tensor(bc_shape, dtype, True)
             y.set_tensor(ffmodel, np2)
         return x, y
+
+
+class AdaptivePool2dFN(FunctionNode):
+    def __init__(self, node, pool_type):
+        super().__init__(node)
+        self.op_type = OpType.POOL2D
+        self.pool_type = pool_type
+        self.acti_mode = ActiMode.AC_MODE_NONE
+        self.assert_num_args(2, Comparator.EQ)
+
+    def parse(self):
+        s = [self.name]
+        innodes = (self.innodes[0],)
+        s.append(self.parse_inoutnodes(innodes))
+        s.append(self.parse_inoutnodes(self.outnodes))
+        s.append(enum_to_str(OpType, self.op_type))
+        s.append(str(self.innodes[1]))
+        # FIXME Fix kernel, stride, and padding
+        s += ["3", "1", "0"]
+        s.append(str(enum_to_int(PoolType, self.pool_type)))
+        s.append(str(enum_to_int(ActiMode, ActiMode.AC_MODE_NONE)))
+        self._ir_string = IR_DELIMITER.join(s)
+
+    @staticmethod
+    def string_to_ff(string, ffmodel, node_to_output):
+        return Pool2dNode.string_to_ff(string, ffmodel, node_to_output)
+
+    def to_ff(self, ffmodel, node_to_output):
+        return Pool2dNode.to_ff(self, ffmodel, node_to_output)
 
 
 class ScalarAddNode(FunctionNode):
@@ -2445,6 +2478,7 @@ class PyTorchModel():
                 )
         else:
             if self.use_customed_tracer:
+                print("*** USING CustomedTracer ***")
                 tracer = CustomedTracer()
                 graph = tracer.trace(self.model)
                 from torch.fx.graph_module import GraphModule
@@ -2458,6 +2492,9 @@ class PyTorchModel():
         for name, module in self.model.named_modules():
             name_to_module[name] = module
         graph = []
+
+        # [GRAPHPRINT] print(traced)
+
         for fx_node in traced.graph.nodes:
             if fx_node.op == "call_module":
                 module_name = fx_node.target
@@ -2468,10 +2505,12 @@ class PyTorchModel():
             elif fx_node.op == "get_attr":
                 node = AttributeNode(fx_node, self.model)
             elif fx_node.op == "call_function" or fx_node.op == "call_method":
-                node = FunctionNode.construct_node(fx_node)
+                node = FunctionNode.construct_node(fx_node, module)
             elif fx_node.op == "output":
                 node = OutputNode(fx_node)
             else:
+                import pdb
+                pdb.set_trace()
                 assert 0, f"Unknown operator type: {fx_node.op}"
             graph.append(node)
 

@@ -9,6 +9,7 @@ from examples.python.pytorch.bert_fs import *
 from examples.python.pytorch.customed_tracer import *
 model = BERT()
 
+"""
 if 1==0:
     name = model.__class__.__name__ if isinstance(model, torch.nn.Module) else model.__name__
     tracer = CustomedTracer()
@@ -16,7 +17,7 @@ if 1==0:
     traced = GraphModule(tracer.root, graph, name)
 
     sym_graph = torch.fx.symbolic_trace(model)
-
+"""
 
 
 # fx.torch_to_flexflow(model, "mymodel.ff")
@@ -24,7 +25,8 @@ ffconfig = FFConfig()
 ffmodel = FFModel(ffconfig)
 
 # batch = make_batch()
-traced = PyTorchModel(model, is_hf_model=False)
+traced = PyTorchModel(model, is_hf_model=False,use_customed_tracer=True)
 # ,input_names=input_names, batch_size=batch_size)
-output_tensors = traced.torch_to_ff(ffmodel, input_tensors, verbose=True)
+TODO = "input_tensors"
+output_tensors = traced.torch_to_ff(ffmodel, TODO, verbose=True)
 

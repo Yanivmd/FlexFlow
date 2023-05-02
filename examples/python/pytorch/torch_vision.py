@@ -15,7 +15,10 @@ def top_level_task():
   dims_input = [ffconfig.batch_size, 3, 229, 229]
   input_tensor = ffmodel.create_tensor(dims_input, DataType.DT_FLOAT)
 
-  output_tensors = PyTorchModel.file_to_ff("squeezenet.ff", ffmodel, [input_tensor])
+  #output_tensors = PyTorchModel.file_to_ff("densenet161.ff", ffmodel, [input_tensor])
+  import torchvision.models as models
+  model = models.densenet161()
+  ff_torch_model = PyTorchModel(model)
 
   ffoptimizer = SGDOptimizer(ffmodel, 0.01)
   ffmodel.optimizer = ffoptimizer
@@ -65,5 +68,5 @@ def top_level_task():
   #   assert 0, 'Check Accuracy'
 
 if __name__ == "__main__":
-  print("alexnet onnx")
+  print("densenet161.ff")
   top_level_task()
